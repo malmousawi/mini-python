@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -39,13 +40,44 @@ def generate():
 
 
 def save():
+    new_data = {
+        website_input.get(): {
+            "email": email_input.get(),
+            "password": pass_input.get(),
+        }
+    }
     is_ok = messagebox.askokcancel(title=website_input.get(), message="Is it ok to save?")
     if is_ok:
-        with open("data.txt", "a") as f:
-            f.write(website_input.get() + " | " + email_input.get() + " | " + pass_input.get())
-            f.write("\n")
+        try:
+            with open("data.json", "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            with open("data.json", "w") as f:
+                json.dump(new_data, f, indent=4)
+        else:
+            data.update(new_data)
+            with open("data.json", "w") as f:
+                json.dump(data, f, indent=4)
+        finally:
+            website_input.delete(0, END)
+            pass_input.delete(0, END)
+
+
+def find_password():
+    website = website_input.get()
+    try:
+        with open("data.json") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        messagebox.showinfo(message="Data not found")
+    else:
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            messagebox.showinfo(message=f"Email: {email}\nPassword: {password}")
+        else:
+            messagebox.showinfo(message="Data not found")
         website_input.delete(0, END)
-        pass_input.delete(0, END)
 
 
 def check():
@@ -70,8 +102,8 @@ canvas.grid(column=1, row=0)
 website_label = Label(text="Website: ", font=("Arial", 15))
 website_label.grid(column=0, row=1)
 
-website_input = Entry(width=35)
-website_input.grid(column=1, columnspan=2, row=1)
+website_input = Entry(width=18)
+website_input.grid(column=1,  row=1)
 
 email_label = Label(text="Email/Username: ", font=("Arial", 15))
 email_label.grid(column=0, row=2)
@@ -83,13 +115,16 @@ email_input.insert(0, "mohammadalmousawi74@gmail.com")
 pass_label = Label(text="Password: ", font=("Arial", 15))
 pass_label.grid(column=0, row=3)
 
-pass_input = Entry(width=21)
-pass_input.grid(column=1, row=3)
+pass_input = Entry(width=35)
+pass_input.grid(column=1, row=3, columnspan=2)
 
 add_button = Button(text="Add", width=36, command=check)
 add_button.grid(column=1, columnspan=2, row=4)
 
 pass_button = Button(text="Generate Password", command=generate)
 pass_button.grid(column=2, row=3)
+
+search_button = Button(text="Search", command=find_password, width=13)
+search_button.grid(column=2, row=1)
 
 window.mainloop()
